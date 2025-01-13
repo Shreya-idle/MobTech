@@ -1,53 +1,81 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-
-dotenv.config();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const bodyParser = require('body-parser');
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = 5000;
 
-// Middleware
-app.use(express.json());
-app.use(cors());
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
+// Connect to MongoDB (Change this URI if you are using MongoDB Atlas)
+mongoose.connect('mongodb://localhost:27017/authApp', {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.log(err));
-
-// User schema
-const userSchema = new mongoose.Schema({
-  name: String,
-  email: { type: String, unique: true },
-  password: String,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log('MongoDB Connected');
+}).catch((err) => {
+  console.log(err);
 });
 
+// Define User Schema
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+});
+
+// Create User Model
 const User = mongoose.model('User', userSchema);
 
 // Signup Route
-app.post('/api/signup', async (req, res) => {
-  const { name, email, password } = req.body;
-  
-  // Check if email already exists
+app.post('/signup', async (req, res) => {
+  const { email, password } = req.body;
+
+  // Check if the user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res.status(400).json({ success: false, message: 'Email already exists!' });
+    return res.status(400).json({ message: 'User already exists' });
   }
 
-  // Create new user
-  const newUser = new User({ name, email, password });
-  await newUser.save();
+  // Hash the password
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  res.status(201).json({ success: true, message: 'User created successfully' });
+  // Create a new user
+  const newUser = new User({ email, password: hashedPassword });
+
+  try {
+    await newUser.save();
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error registering user', error: err });
+  }
+});
+
+// Login Route
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  // Find the user by email
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({ message: 'User not found' });
+  }
+
+  // Compare the provided password with the stored hashed password
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(400).json({ message: 'Invalid credentials' });
+  }
+
+  // Generate a JWT token for the user
+  const token = jwt.sign({ userId: user._id }, 'your-secret-key', { expiresIn: '1h' });
+
+  res.status(200).json({ message: 'Login successful', token });
 });
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server running on http://localhost:${port}`);
 });

@@ -1,43 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom'; // Ensure correct import for routing
-
-import CircleVisibility from './components/Navbar'; 
-import HomePage from './components/Homepage'; 
-import TrendingRecipes from './components/TrendingRecipes'; 
-import StayInTouch from './components/Homepage'; 
-import PopularDishes from './components/Populardishes'; 
-import Footer from './components/Footer'; 
-import Signup from './components/Signup'; 
+import StayInTouch from './components/Homepage';
+import HomePage from './components/Section';
+import TrendingRecipes from './components/TrendingRecipes';
+import PopularDishes from './components/Populardishes';
+import Footer from './components/Footer';
+import Navbar from './components/Navbar';
+import Signup from './components/Signup';
+import Login from './components/Login';  // Import Login component
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
+  const [showSignup, setShowSignup] = useState(false); // State for toggling the signup popup
+  const [showLogin, setShowLogin] = useState(false); // State for toggling the login popup
+
   return (
-    <Router> 
-      <div>
-        
-        <CircleVisibility />
+    <div className="app-wrapper">
+      {/* Render the signup and login popups only when their respective states are true */}
+      {showSignup && <Signup setShowSignup={setShowSignup} />}
+      {showLogin && <Login setShowLogin={setShowLogin} />}
+
+      {/* Pass the setShowSignup and setShowLogin functions to Navbar */}
+      <Navbar setShowSignup={setShowSignup} setShowLogin={setShowLogin} />
+
+      {/* Other components */}
+      <ErrorBoundary>
         <HomePage />
         <TrendingRecipes />
         <StayInTouch />
         <PopularDishes />
         <Footer />
-
-        {/* Link to Signup Page */}
-        <div>
-          <Link to="/signup">
-            <button className="bg-red-500 text-white mx-4 px-4 py-3 rounded-md shadow-md hover:bg-red-600 mt-6">
-              Sign Up
-            </button>
-          </Link>
-        </div>
-
-        {/* Define the Routes for navigation */}
-        <Routes>
-          <Route path="/" element={<HomePage />} /> {/* Home Page Route */}
-          <Route path="/signup" element={<Signup />} /> {/* Signup Page Route */}
-        </Routes>
-      </div>
-    </Router>
+      </ErrorBoundary>
+    </div>
   );
 }
 

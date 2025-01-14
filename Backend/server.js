@@ -1,27 +1,25 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const bodyParser = require('body-parser');
+import express from 'express';
+import mongoose, { Schema } from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+// import { json } from 'body-parser';
+import connectDB from './db.js';
+import cookieParser from "cookie-parser"
 
 const app = express();
 const port = 5000;
 
 // Middleware to parse JSON bodies
-app.use(bodyParser.json());
+app.use(express.json({limit: "16kb"}))
+app.use(express.urlencoded({extended: true, limit: "16kb"}))
+app.use(express.static("public"))
+app.use(cookieParser())
 
 // Connect to MongoDB (Change this URI if you are using MongoDB Atlas)
-mongoose.connect('mongodb://localhost:27017/authApp', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('MongoDB Connected');
-}).catch((err) => {
-  console.log(err);
-});
+connectDB();
 
 // Define User Schema
-const userSchema = new mongoose.Schema({
+const userSchema = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
